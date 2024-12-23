@@ -1,0 +1,103 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <chrono> // Untuk pengukuran waktu
+
+using namespace std;
+
+// Struktur untuk merepresentasikan aktivitas
+struct Activity {
+    int start;
+    int end;
+    int id; // ID opsional untuk mengidentifikasi aktivitas
+};
+
+// Fungsi untuk mencetak aktivitas yang dipilih
+void printSelectedActivities(const vector<Activity>& selected) {
+    cout << "Selected Activities:\n";
+    for (const auto& activity : selected) {
+        cout << "Activity " << activity.id << ": [" << activity.start << ", " << activity.end << "]\n";
+    }
+}
+
+// Iteratif (Greedy)
+vector<Activity> greedyActivitySelection(vector<Activity>& activities) {
+    // Urutkan aktivitas berdasarkan waktu selesai
+    sort(activities.begin(), activities.end(), [](const Activity& a, const Activity& b) {
+        return a.end < b.end;
+    });
+
+    vector<Activity> selected;
+    int lastEndTime = 0;
+
+    for (const auto& activity : activities) {
+        if (activity.start >= lastEndTime) {
+            selected.push_back(activity);
+            lastEndTime = activity.end;
+        }
+    }
+
+    return selected;
+}
+
+// Rekursif (Backtracking)
+vector<Activity> recursiveActivitySelectionHelper(vector<Activity>& activities, int index, int lastEndTime) {
+    if (index == activities.size()) {
+        return {};
+    }
+
+    vector<Activity> include;
+    if (activities[index].start >= lastEndTime) {
+        include = recursiveActivitySelectionHelper(activities, index + 1, activities[index].end);
+        include.insert(include.begin(), activities[index]);
+    }
+
+    vector<Activity> exclude = recursiveActivitySelectionHelper(activities, index + 1, lastEndTime);
+
+    return (include.size() > exclude.size()) ? include : exclude;
+}
+
+vector<Activity> recursiveActivitySelection(vector<Activity>& activities) {
+    // Urutkan aktivitas berdasarkan waktu mulai (opsional)
+    sort(activities.begin(), activities.end(), [](const Activity& a, const Activity& b) {
+        return a.start < b.start;
+    });
+
+    return recursiveActivitySelectionHelper(activities, 0, 0);
+}
+
+// Fungsi utama
+int main() {
+    // Input aktivitas (dapat diubah sesuai kebutuhan)
+    vector<Activity> activities = {
+        {1, 3, 1}, {2, 5, 2}, {4, 6, 3}, {6, 7, 4}, {5, 8, 5}, {8, 9, 6}
+    };
+
+    cout << "Initial Activities:\n";
+    for (const auto& activity : activities) {
+        cout << "Activity " << activity.id << ": [" << activity.start << ", " << activity.end << "]\n";
+    }
+    cout << "\n";
+
+    // Greedy Approach
+    auto startGreedy = chrono::high_resolution_clock::now();
+    vector<Activity> greedyResult = greedyActivitySelection(activities);
+    auto endGreedy = chrono::high_resolution_clock::now();
+    chrono::duration<double> durationGreedy = endGreedy - startGreedy;
+
+    cout << "Greedy Selected Activities:\n";
+    printSelectedActivities(greedyResult);
+    cout << "Execution Time (Greedy): " << durationGreedy.count() << " seconds\n\n";
+
+    // Recursive Approach
+    auto startRecursive = chrono::high_resolution_clock::now();
+    vector<Activity> recursiveResult = recursiveActivitySelection(activities);
+    auto endRecursive = chrono::high_resolution_clock::now();
+    chrono::duration<double> durationRecursive = endRecursive - startRecursive;
+
+    cout << "Recursive Selected Activities:\n";
+    printSelectedActivities(recursiveResult);
+    cout << "Execution Time (Recursive): " << durationRecursive.count() << " seconds\n";
+
+    return 0;
+}
